@@ -57,8 +57,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: docker build -t infraautomate:latest .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image with cache
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: infraautomate:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Verify image
         run: docker images | grep infraautomate
