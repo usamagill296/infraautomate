@@ -3,6 +3,8 @@ name: InfraAutomate CI/CD
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '0 */6 * * *'
 
 jobs:
   lint:
@@ -77,3 +79,26 @@ jobs:
           curl -X POST -H 'Content-type: application/json' \
           --data "{\"text\":\"${STATUS} - infraautomate pipeline on branch ${{ github.ref_name }} by ${{ github.actor }}\"}" \
           $SLACK_WEBHOOK_URL        
+
+  health_check:
+    name: Scheduled Health Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests flask
+
+      - name: Run health check
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          python app/app.py &
+          sleep 3
+          python scripts/python/health_check.py          
